@@ -1,6 +1,5 @@
 #include "Agent.h"
 #include <unordered_set>
-#include <unordered_map>
 #include <queue>
 #include "World.h"
 using namespace std;
@@ -17,6 +16,7 @@ std::vector<Point2D> Agent::generatePath(World* w) { //this is where we do dijks
   frontier.push(catPos);
   frontierSet.insert(catPos);
   Point2D borderExit = Point2D::INFINITE;  // if at the end of the loop we don't find a border, we have to return random points
+  auto sideSizeOver2 = w->getWorldSideSize() / 2;
 
   while (!frontier.empty()) {
     // get the current from frontier
@@ -26,13 +26,22 @@ std::vector<Point2D> Agent::generatePath(World* w) { //this is where we do dijks
     // mark current as visited
     visited.emplace(current, true);
     // getVisitableNeightbors(world, current) returns a vector of neighbors that are not visited, not cat, not block, not in the queue
-    std::vector<Point2D> neighbors = getVisitableNeighbors(w, &current);
-    // iterate over the neighs:
+    std::vector<Point2D> neighbors = getVisitableNeighbors(w, &current, visited);
+    // iterate over the neighbors:
     for (Point2D n : neighbors) {
       // for every neighbor set the cameFrom
+      cameFrom.emplace(n, current);
       // enqueue the neighbors to frontier and frontierset
+      frontier.push(n);
+      frontierSet.insert(n);
       // do this up to find a visitable border and break the loop
+      if ((n.x == sideSizeOver2) || (n.x == -sideSizeOver2) || (n.y == sideSizeOver2) || (n.y == -sideSizeOver2)) {
+        break;
+      }
     }
+    std::vector<Point2D> path;
+
+    return path;
   }
 
   // if the border is not infinity, build the path from border to the cat using the camefrom map
@@ -41,10 +50,63 @@ std::vector<Point2D> Agent::generatePath(World* w) { //this is where we do dijks
   return vector<Point2D>();
 }
 
-std::vector<Point2D> Agent::getVisitableNeighbors(World* w, Point2D* p) {
+std::vector<Point2D> Agent::getVisitableNeighbors(World* w, Point2D* p, unordered_map<Point2D, bool> v) {
   std::vector<Point2D> neighbors;
-
-  //how does this work for hex grid
+  //ignore the current point, visited points, cat position
+  //EAST
+  Point2D east = w->E(*p);
+  if (!w->isValidPosition(east)) { //is the point on the grid
+    if (!v.at(east)) { //has it been visited?
+      if (east != w->getCat()) { //is the cat there?
+        neighbors.push_back(east);
+      }
+    }
+  }
+  //WEST
+  Point2D west = w->W(*p);
+  if (!w->isValidPosition(west)) { //is the point on the grid
+    if (!v.at(west)) { //has it been visited?
+      if (west != w->getCat()) { //is the cat there?
+        neighbors.push_back(west);
+      }
+    }
+  }
+  //NORTHEAST
+  Point2D nEast = w->NE(*p);
+  if (!w->isValidPosition(nEast)) { //is the point on the grid
+    if (!v.at(nEast)) { //has it been visited?
+      if (nEast != w->getCat()) { //is the cat there?
+        neighbors.push_back(nEast);
+      }
+    }
+  }
+  //NORTHWEST
+  Point2D nWest = w->NW(*p);
+  if (!w->isValidPosition(nWest)) { //is the point on the grid
+    if (!v.at(nWest)) { //has it been visited?
+      if (nWest != w->getCat()) { //is the cat there?
+        neighbors.push_back(nWest);
+      }
+    }
+  }
+  //SOUTHEAST
+  Point2D sEast = w->SE(*p);
+  if (!w->isValidPosition(sEast)) { //is the point on the grid
+    if (!v.at(sEast)) { //has it been visited?
+      if (sEast != w->getCat()) { //is the cat there?
+        neighbors.push_back(sEast);
+      }
+    }
+  }
+  //SOUTHWEST
+  Point2D sWest = w->SW(*p);
+  if (!w->isValidPosition(sWest)) { //is the point on the grid
+    if (!v.at(sWest)) { //has it been visited?
+      if (sWest != w->getCat()) { //is the cat there?
+        neighbors.push_back(sWest);
+      }
+    }
+  }
 
   return neighbors;
 }
