@@ -3,6 +3,7 @@
 #include "math/Point2D.h"
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 class World;
 
@@ -13,7 +14,8 @@ public:
   virtual Point2D Move(World*) = 0;
 
   std::vector<Point2D> generatePath(World* w);
-  std::vector<Point2D> getVisitableNeighbors(World* w, Point2D* p, std::unordered_map<Point2D, bool> v);
+  std::vector<Point2D> getVisitableNeighbors(World* w, Point2D* p, std::unordered_set<Point2D> v);
+  int heuristic(Point2D p, World* w);
 };
 
 #endif  // AGENT_H

@@ -4,45 +4,75 @@
 #include "World.h"
 using namespace std;
 
+struct PrioritizedPoint2D {
+  Point2D pos;
+  int priority;
+
+  bool operator==(const PrioritizedPoint2D &other) const {
+    return pos.x == other.pos.x && pos.y ==other.pos.y;
+  }
+
+  bool operator<(const PrioritizedPoint2D &other) const {
+    return priority < other.priority;
+  }
+};
+
+template<>
+struct std::hash<PrioritizedPoint2D> {
+  size_t operator()(const PrioritizedPoint2D &p) const {
+    return hash<int>()(p.pos.x) ^ (hash<int>()(p.pos.y) << 1);
+  }
+};
+
+int heuristic(Point2D p, World* w) {
+  auto sideSizeOver2 = w->getWorldSideSize() / 2;
+  return sideSizeOver2 - max(abs(p.x), abs(p.y));
+}
+
 //a* target is the edge of the map in both cases
 std::vector<Point2D> Agent::generatePath(World* w) { //this is where we do dijkstra's/a* (I kinda want to do a*)
   unordered_map<Point2D, Point2D> cameFrom;  // to build the flowfield and build the path
-  queue<Point2D> frontier;                   // to store next ones to visit
+  priority_queue<PrioritizedPoint2D> frontier;                   // to store next ones to visit
   unordered_set<Point2D> frontierSet;        // OPTIMIZATION to check faster if a point is in the queue
-  unordered_map<Point2D, bool> visited;      // use .at() to get data, if the element doesn't exist [] will give you wrong results
+  unordered_set<Point2D> visited;      // use .at() to get data, if the element doesn't exist [] will give you wrong results
 
   // bootstrap state
   auto catPos = w->getCat();
-  frontier.push(catPos);
+  frontier.push({catPos, 0});
   frontierSet.insert(catPos);
   Point2D borderExit = Point2D::INFINITE;  // if at the end of the loop we don't find a border, we have to return random points
   auto sideSizeOver2 = w->getWorldSideSize() / 2;
+  std::vector<Point2D> path;
 
   while (!frontier.empty()) {
     // get the current from frontier
-    auto current = frontier.front();
-    // remove the current from frontierset
+    auto current = frontier.top();
+    if ((current.pos.x == sideSizeOver2) || (current.pos.x == -sideSizeOver2) || (current.pos.y == sideSizeOver2) || (current.pos.y == -sideSizeOver2)) {
+      Point2D p = current.pos;
+      while (p != catPos) {
+        path.push_back(p);
+        p = cameFrom[p];
+      }
+      path.push_back(catPos);
+      return path;
+    }
     frontier.pop();
-    // mark current as visited
-    visited.emplace(current, true);
+    visited.emplace(current.pos);
     // getVisitableNeightbors(world, current) returns a vector of neighbors that are not visited, not cat, not block, not in the queue
-    std::vector<Point2D> neighbors = getVisitableNeighbors(w, &current, visited);
-    // iterate over the neighbors:
-    for (Point2D n : neighbors) {
-      // for every neighbor set the cameFrom
-      cameFrom.emplace(n, current);
-      // enqueue the neighbors to frontier and frontierset
-      frontier.push(n);
+    std::vector<Point2D> neighbors = getVisitableNeighbors(w, &current.pos, visited);
+    for (Point2D n : neighbors) { // iterate over the neighbors:
+      cameFrom.emplace(n, current.pos); // for every neighbor set the cameFrom
+      int priority = heuristic(n, w);
+      frontier.push({n, priority}); // enqueue the neighbors to frontier and frontierset //STOPPING POINT
       frontierSet.insert(n);
       // do this up to find a visitable border and break the loop
       if ((n.x == sideSizeOver2) || (n.x == -sideSizeOver2) || (n.y == sideSizeOver2) || (n.y == -sideSizeOver2)) {
         break;
       }
     }
-    std::vector<Point2D> path;
 
-    return path;
   }
+
 
   // if the border is not infinity, build the path from border to the cat using the camefrom map
   // if there isnt a reachable border, just return empty vector
@@ -50,13 +80,13 @@ std::vector<Point2D> Agent::generatePath(World* w) { //this is where we do dijks
   return vector<Point2D>();
 }
 
-std::vector<Point2D> Agent::getVisitableNeighbors(World* w, Point2D* p, unordered_map<Point2D, bool> v) {
+std::vector<Point2D> Agent::getVisitableNeighbors(World* w, Point2D* p, unordered_set<Point2D> v) {
   std::vector<Point2D> neighbors;
   //ignore the current point, visited points, cat position
   //EAST
   Point2D east = w->E(*p);
   if (!w->isValidPosition(east)) { //is the point on the grid
-    if (!v.at(east)) { //has it been visited?
+    if (!v.contains(east)) { //has it been visited?
       if (east != w->getCat()) { //is the cat there?
         neighbors.push_back(east);
       }
@@ -65,7 +95,7 @@ std::vector<Point2D> Agent::getVisitableNeighbors(World* w, Point2D* p, unordere
   //WEST
   Point2D west = w->W(*p);
   if (!w->isValidPosition(west)) { //is the point on the grid
-    if (!v.at(west)) { //has it been visited?
+    if (!v.contains(west)) { //has it been visited?
       if (west != w->getCat()) { //is the cat there?
         neighbors.push_back(west);
       }
@@ -74,7 +104,7 @@ std::vector<Point2D> Agent::getVisitableNeighbors(World* w, Point2D* p, unordere
   //NORTHEAST
   Point2D nEast = w->NE(*p);
   if (!w->isValidPosition(nEast)) { //is the point on the grid
-    if (!v.at(nEast)) { //has it been visited?
+    if (!v.contains(nEast)) { //has it been visited?
       if (nEast != w->getCat()) { //is the cat there?
         neighbors.push_back(nEast);
       }
@@ -83,7 +113,7 @@ std::vector<Point2D> Agent::getVisitableNeighbors(World* w, Point2D* p, unordere
   //NORTHWEST
   Point2D nWest = w->NW(*p);
   if (!w->isValidPosition(nWest)) { //is the point on the grid
-    if (!v.at(nWest)) { //has it been visited?
+    if (!v.contains(nWest)) { //has it been visited?
       if (nWest != w->getCat()) { //is the cat there?
         neighbors.push_back(nWest);
       }
@@ -92,7 +122,7 @@ std::vector<Point2D> Agent::getVisitableNeighbors(World* w, Point2D* p, unordere
   //SOUTHEAST
   Point2D sEast = w->SE(*p);
   if (!w->isValidPosition(sEast)) { //is the point on the grid
-    if (!v.at(sEast)) { //has it been visited?
+    if (!v.contains(sEast)) { //has it been visited?
       if (sEast != w->getCat()) { //is the cat there?
         neighbors.push_back(sEast);
       }
@@ -101,7 +131,7 @@ std::vector<Point2D> Agent::getVisitableNeighbors(World* w, Point2D* p, unordere
   //SOUTHWEST
   Point2D sWest = w->SW(*p);
   if (!w->isValidPosition(sWest)) { //is the point on the grid
-    if (!v.at(sWest)) { //has it been visited?
+    if (!v.contains(sWest)) { //has it been visited?
       if (sWest != w->getCat()) { //is the cat there?
         neighbors.push_back(sWest);
       }
