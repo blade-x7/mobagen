@@ -63,7 +63,7 @@ std::vector<Point2D> Agent::generatePath(World* w) { //this is where we do dijks
     for (Point2D n : neighbors) { // iterate over the neighbors:
       cameFrom.emplace(n, current.pos); // for every neighbor set the cameFrom
       int priority = heuristic(n, w);
-      frontier.push({n, priority}); // enqueue the neighbors to frontier and frontierset //STOPPING POINT
+      frontier.push({n, priority}); // enqueue the neighbors to frontier and frontierset //STOPPING POINT //maybe this will work
       frontierSet.insert(n);
       // do this up to find a visitable border and break the loop
       if ((n.x == sideSizeOver2) || (n.x == -sideSizeOver2) || (n.y == sideSizeOver2) || (n.y == -sideSizeOver2)) {
