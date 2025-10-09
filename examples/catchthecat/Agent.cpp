@@ -13,7 +13,7 @@ struct PrioritizedPoint2D {
   }
 
   bool operator<(const PrioritizedPoint2D &other) const {
-    return priority < other.priority;
+    return priority > other.priority;
   }
 };
 
@@ -48,13 +48,13 @@ std::vector<Point2D> Agent::generatePath(World* w) { //this is where we do dijks
     // get the current from frontier
     auto current = frontier.top();
     //check if we're at the end of the map
-    if ((current.pos.x == sideSizeOver2) || (current.pos.x == -sideSizeOver2) || (current.pos.y == sideSizeOver2) || (current.pos.y == -sideSizeOver2)) {
+    if (w->catWinsOnSpace(current.pos)) {
       Point2D p = current.pos;
-      while (p != catPos) {
+      while (!w->catCanMoveToPosition(p)) {
         path.push_back(p);
         p = cameFrom[p];
       }
-      path.push_back(catPos);
+      path.push_back(p);
       return path;
     }
 
@@ -65,7 +65,7 @@ std::vector<Point2D> Agent::generatePath(World* w) { //this is where we do dijks
     for (Point2D n : neighbors) { // iterate over the neighbors:
       cameFrom.emplace(n, current.pos); // for every neighbor set the cameFrom
       int priority = heuristic(n, w);
-      frontier.push({n, priority}); // enqueue the neighbors to frontier and frontierset //STOPPING POINT
+      frontier.push({n, priority}); // enqueue the neighbors to frontier and frontierset
       frontierSet.insert(n);
       // do this up to find a visitable border and break the loop
       if ((n.x == sideSizeOver2) || (n.x == -sideSizeOver2) || (n.y == sideSizeOver2) || (n.y == -sideSizeOver2)) {

@@ -7,7 +7,7 @@ Point2D Cat::Move(World* world) {
 
   if (!path.empty()) { //check if the path is empty
     Point2D newPos;
-    newPos = path.at(path.size() - 2);
+    newPos = path.at(path.size() - 1);
     return newPos;
   }
   else {
