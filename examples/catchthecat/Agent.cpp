@@ -26,7 +26,8 @@ struct std::hash<PrioritizedPoint2D> {
 
 int Agent::heuristic(Point2D p, World* w) {
   auto sideSizeOver2 = w->getWorldSideSize() / 2;
-  return sideSizeOver2 - max(abs(p.x), abs(p.y));
+  //return sideSizeOver2 - max(abs(p.x), abs(p.y));
+  return std::min(sideSizeOver2 - abs(p.x), sideSizeOver2 - abs(p.y));
 }
 
 //a* target is the edge of the map in both cases
