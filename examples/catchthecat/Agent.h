@@ -8,13 +8,16 @@
 class World;
 
 class Agent {
+private:
+  std::unordered_set<Point2D> visited;
 public:
   explicit Agent() = default;
 
   virtual Point2D Move(World*) = 0;
 
   std::vector<Point2D> generatePath(World* w);
-  std::vector<Point2D> getVisitableNeighbors(World* w, Point2D* p, std::unordered_set<Point2D> v);
+  std::vector<Point2D> getVisitableNeighbors(World* w, Point2D* p);
+  std::vector<Point2D> getMoveableNeighbors(World* w, Point2D* p);
   int heuristic(Point2D p, World* w);
 };
 

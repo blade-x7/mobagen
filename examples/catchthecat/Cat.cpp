@@ -3,22 +3,22 @@
 #include <stdexcept>
 
 Point2D Cat::Move(World* world) {
-  auto rand = Random::Range(0, 5);
-  auto pos = world->getCat();
-  switch (rand) {
-    case 0:
-      return World::NE(pos);
-    case 1:
-      return World::NW(pos);
-    case 2:
-      return World::E(pos);
-    case 3:
-      return World::W(pos);
-    case 4:
-      return World::SW(pos);
-    case 5:
-      return World::SE(pos);
-    default:
-      throw "random out of range";
+  std::vector<Point2D> path = generatePath(world);
+
+  if (!path.empty()) { //check if the path is empty
+    Point2D newPos;
+    newPos = path.at(path.size() - 2);
+    return newPos;
+  }
+  else {
+    Point2D currPos = world->getCat();
+    std::vector<Point2D> neighbors = getMoveableNeighbors(world, &currPos);
+    if (neighbors.empty()) {
+      return currPos;
+    }
+    else {
+      auto rand = Random::Range(0, neighbors.size() - 1);
+      return neighbors.at(rand);
+    }
   }
 }
